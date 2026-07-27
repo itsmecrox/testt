@@ -1,1 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lua Obfuscator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #8892b0;
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title span {
+            font-size: 1.4rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            color: #e0e0e0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            border-color: #00d4ff;
+        }
+
+        textarea::placeholder {
+            color: #555;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00c853, #009624);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 200, 83, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff1744, #b71c1c);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 23, 68, 0.4);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-card:hover {
+            border-color: rgba(0, 212, 255, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .option-card.active {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .option-card input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .option-card .check-indicator {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            transition: all 0.3s;
+            vertical-align: middle;
+        }
+
+        .option-card.active .check-indicator {
+            background: #00d4ff;
+            border-color: #00d4ff;
+        }
+
+        .option-card.active .check-indicator::after {
+            content: '✓';
+            color: #1a1a2e;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .option-title {
+            font-weight: 600;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+        }
+
+        .option-desc {
+            font-size: 0.8rem;
+            color: #8892b0;
+            margin-top: 4px;
+            margin-left: 32px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px 20px;
+            min-width: 120px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #8892b0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-top: 4px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 12px;
+            border-left: 4px solid #00d4ff;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ff1744;
+        }
+
+        .toast.success {
+            border-left-color: #00c853;
+        }
+
+        .progress-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+        }
+
+        .progress-overlay.active {
+            display: flex;
+        }
+
+        .progress-box {
+            background: #1a1a2e;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 212, 255, 0.2);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-text {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+        }
+
+        .sample-code {
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .sample-code a {
+            color: #00d4ff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #555;
+            font-size: 0.85rem;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Lua Obfuscator</h1>
+            <p>Secure your Lua scripts with multiple obfuscation layers</p>
+        </header>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="obfuscate()">
+                <span>🔐</span> Obfuscate
+            </button>
+            <button class="btn btn-success" onclick="copyOutput()">
+                <span>📋</span> Copy Output
+            </button>
+            <button class="btn btn-secondary" onclick="downloadOutput()">
+                <span>💾</span> Download
+            </button>
+            <button class="btn btn-danger" onclick="clearAll()">
+                <span>🗑️</span> Clear All
+            </button>
+        </div>
+
+        <div class="options-grid">
+            <div class="option-card active" onclick="toggleOption(this, 'stringEncode')">
+                <input type="checkbox" id="opt-stringEncode" checked>
+                <span class="check-indicator"></span>
+                <span class="option-title">String Encoding</span>
+                <div class="option-desc">Encode string literals using byte arrays</div>
+            </div>
+            <div class="option-card active" onclick="toggleOption(this, 'varRename')">
+                <input type="checkbox" id="opt-varRename" checked>
+                <span class="check-indicator"></span>
+                <span class="option-title">Variable Renaming</span>
+                <div class="option-desc">Replace variable names with random strings</div>
+            </div>
+            <div class="option-card active" onclick="toggleOption(this, 'junkCode')">
+                <input type="checkbox" id="opt-junkCode" checked>
+                <span class="check-indicator"></span>
+                <span class="option-title">Junk Code Injection</span>
+                <div class="option-desc">Insert dead code and fake branches</div>
+            </div>
+            <div class="option-card" onclick="toggleOption(this, 'controlFlow')">
+                <input type="checkbox" id="opt-controlFlow">
+                <span class="check-indicator"></span>
+                <span class="option-title">Control Flow Flattening</span>
+                <div class="option-desc">Flatten control flow with state machines</div>
+            </div>
+            <div class="option-card active" onclick="toggleOption(this, 'numberObf')">
+                <input type="checkbox" id="opt-numberObf" checked>
+                <span class="check-indicator"></span>
+                <span class="option-title">Number Obfuscation</span>
+                <div class="option-desc">Obfuscate numeric literals</div>
+            </div>
+            <div class="option-card" onclick="toggleOption(this, 'compress')">
+                <input type="checkbox" id="opt-compress">
+                <span class="check-indicator"></span>
+                <span class="option-title">Minify Output</span>
+                <div class="option-desc">Remove whitespace and comments</div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">Input Size</div>
+                <div class="stat-value" id="inputSize">0 B</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Output Size</div>
+                <div class="stat-value" id="outputSize">0 B</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Size Change</div>
+                <div class="stat-value" id="sizeChange">0%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Lines</div>
+                <div class="stat-value" id="lineCount">0</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><span>📝</span> Input (Lua Source)</div>
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadSample()">
+                        Load Sample
+                    </button>
+                </div>
+                <textarea id="input" placeholder="Paste your Lua code here...
+
+Example:
+local function greet(name)
+    print('Hello, ' .. name)
+end
+
+greet('World')" oninput="updateStats()"></textarea>
+                <div class="sample-code">
+                    <a onclick="loadSample()">Click here to load a sample script</a>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><span>🔒</span> Output (Obfuscated)</div>
+                </div>
+                <textarea id="output" placeholder="Obfuscated Lua code will appear here..." readonly></textarea>
+            </div>
+        </div>
+
+        <footer>
+            <p>Lua Obfuscator — Client-side processing. Your code never leaves your browser.</p>
+        </footer>
+    </div>
+
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-box">
+            <div class="spinner"></div>
+            <div class="progress-text" id="progressText">Obfuscating...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMessage">Done!</span>
+    </div>
+
+    <script>
+        // ========== OPTIONS STATE ==========
+        const options = {
+            stringEncode: true,
+            varRename: true,
+            junkCode: true,
+            controlFlow: false,
+            numberObf: true,
+            compress: false
+        };
+
+        function toggleOption(card, key) {
+            options[key] = !options[key];
+            card.classList.toggle('active');
+            const checkbox = card.querySelector('input');
+            checkbox.checked = options[key];
+        }
+
+        // ========== UTILITIES ==========
+        function randomString(length = 8) {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            toast.className = 'toast show ' + type;
+            icon.textContent = type === 'error' ? '✗' : '✓';
+            msg.textContent = message;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function setProgress(text, active) {
+            document.getElementById('progressText').textContent = text;
+            const overlay = document.getElementById('progressOverlay');
+            if (active) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+
+        // ========== OBFUSCATION ENGINE ==========
+        function obfuscate() {
+            const input = document.getElementById('input').value;
+            if (!input.trim()) {
+                showToast('Please enter Lua code first!', 'error');
+                return;
+            }
+
+            setProgress('Parsing and obfuscating...', true);
+
+            setTimeout(() => {
+                try {
+                    let code = input;
+
+                    // Step 1: Remove comments (preserve strings)
+                    if (options.compress) {
+                        code = removeComments(code);
+                    }
+
+                    // Step 2: Variable renaming
+                    if (options.varRename) {
+                        code = renameVariables(code);
+                    }
+
+                    // Step 3: String encoding
+                    if (options.stringEncode) {
+                        code = encodeStrings(code);
+                    }
+
+                    // Step 4: Number obfuscation
+                    if (options.numberObf) {
+                        code = obfuscateNumbers(code);
+                    }
+
+                    // Step 5: Junk code injection
+                    if (options.junkCode) {
+                        code = injectJunkCode(code);
+                    }
+
+                    // Step 6: Control flow flattening
+                    if (options.controlFlow) {
+                        code = flattenControlFlow(code);
+                    }
+
+                    // Step 7: Minify
+                    if (options.compress) {
+                        code = minifyCode(code);
+                    }
+
+                    // Step 8: Wrap in loader
+                    code = wrapInLoader(code);
+
+                    document.getElementById('output').value = code;
+                    updateStats();
+                    showToast('Obfuscation complete!');
+                } catch (err) {
+                    showToast('Error: ' + err.message, 'error');
+                    console.error(err);
+                }
+                setProgress('', false);
+            }, 100);
+        }
+
+        function removeComments(code) {
+            let result = '';
+            let inString = false;
+            let stringChar = '';
+            let i = 0;
+
+            while (i < code.length) {
+                if (!inString && (code[i] === '"' || code[i] === "'" || code[i] === '[')) {
+                    if (code[i] === '[' && code[i+1] === '[') {
+                        inString = true;
+                        stringChar = '[[';
+                        result += code[i];
+                        i++;
+                    } else {
+                        inString = true;
+                        stringChar = code[i];
+                        result += code[i];
+                    }
+                } else if (inString) {
+                    if (stringChar === '[[' && code[i] === ']' && code[i+1] === ']') {
+                        inString = false;
+                        result += ']]';
+                        i += 2;
+                        continue;
+                    } else if (code[i] === stringChar && stringChar !== '[[') {
+                        inString = false;
+                    }
+                    result += code[i];
+                } else if (code[i] === '-' && code[i+1] === '-') {
+                    // Skip single-line comment
+                    while (i < code.length && code[i] !== '\n') i++;
+                    result += '\n';
+                } else if (code[i] === '-' && code[i+1] === '-' && code[i+2] === '[' && code[i+3] === '[') {
+                    // Skip multi-line comment
+                    i += 4;
+                    while (i < code.length - 1 && !(code[i] === ']' && code[i+1] === ']')) i++;
+                    i += 2;
+                } else {
+                    result += code[i];
+                }
+                i++;
+            }
+            return result;
+        }
+
+        function renameVariables(code) {
+            // Find local declarations and function parameters
+            const varMap = new Map();
+            let result = code;
+
+            // Match local declarations
+            const localPattern = /\blocal\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*)*)/g;
+            let match;
+            while ((match = localPattern.exec(code)) !== null) {
+                const vars = match[1].split(',').map(v => v.trim());
+                vars.forEach(v => {
+                    if (!varMap.has(v) && !isKeyword(v) && v.length > 1) {
+                        varMap.set(v, '_' + randomString(6));
+                    }
+                });
+            }
+
+            // Match function parameters
+            const funcPattern = /function\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*)*)?\s*\)/g;
+            while ((match = funcPattern.exec(code)) !== null) {
+                if (match[1]) {
+                    const vars = match[1].split(',').map(v => v.trim());
+                    vars.forEach(v => {
+                        if (!varMap.has(v) && !isKeyword(v) && v.length > 1) {
+                            varMap.set(v, '_' + randomString(6));
+                        }
+                    });
+                }
+            }
+
+            // Replace all occurrences
+            varMap.forEach((newName, oldName) => {
+                const regex = new RegExp('\\b' + oldName + '\\b', 'g');
+                result = result.replace(regex, newName);
+            });
+
+            return result;
+        }
+
+        function isKeyword(word) {
+            const keywords = ['and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until', 'while', 'print', 'pairs', 'ipairs', 'next', 'type', 'tonumber', 'tostring', 'assert', 'error', 'pcall', 'xpcall', 'loadstring', 'require', 'module', 'select', 'collectgarbage', 'getmetatable', 'setmetatable', 'rawget', 'rawset', 'rawequal', 'unpack', 'math', 'string', 'table', 'io', 'os', 'coroutine', 'debug', 'bit32', 'utf8'];
+            return keywords.includes(word);
+        }
+
+        function encodeStrings(code) {
+            let result = '';
+            let i = 0;
+            let inString = false;
+            let stringChar = '';
+            let currentString = '';
+
+            while (i < code.length) {
+                if (!inString && (code[i] === '"' || code[i] === "'")) {
+                    inString = true;
+                    stringChar = code[i];
+                    currentString = '';
+                } else if (inString) {
+                    if (code[i] === '\\' && i + 1 < code.length) {
+                        currentString += code[i] + code[i+1];
+                        i += 2;
+                        continue;
+                    }
+                    if (code[i] === stringChar) {
+                        inString = false;
+                        result += encodeStringLiteral(currentString);
+                    } else {
+                        currentString += code[i];
+                    }
+                } else {
+                    result += code[i];
+                }
+                i++;
+            }
+            return result;
+        }
+
+        function encodeStringLiteral(str) {
+            if (str.length === 0) return '""';
+            const bytes = [];
+            for (let i = 0; i < str.length; i++) {
+                bytes.push(str.charCodeAt(i));
+            }
+            const varName = '_' + randomString(4);
+            return '(function() local ' + varName + '={'
+                + bytes.map(b => obfuscateNumber(b)).join(',')
+                + '} return string.char(unpack(' + varName + ')) end)()';
+        }
+
+        function obfuscateNumbers(code) {
+            return code.replace(/\b(\d+)\b/g, (match, num) => {
+                return obfuscateNumber(parseInt(num));
+            });
+        }
+
+        function obfuscateNumber(n) {
+            if (n < 0) return n;
+            const methods = [
+                () => n,
+                () => '(' + (n + randomInt(1, 50)) + '-' + randomInt(1, 50) + ')',
+                () => '(' + Math.floor(n/2) + '+' + Math.ceil(n/2) + ')',
+                () => '(#' + JSON.stringify('x'.repeat(n)) + ')',
+                () => 'tonumber("' + n.toString(randomInt(2, 16)) + '",' + randomInt(2, 16) + ')'
+            ];
+            return methods[randomInt(0, methods.length - 1)]();
+        }
+
+        function injectJunkCode(code) {
+            const junkSnippets = [
+                'if false then local _' + randomString(5) + '=' + randomInt(1, 999) + ' end;',
+                'local _' + randomString(5) + '=(function()return ' + randomInt(1, 999) + ' end)();',
+                'do local _' + randomString(5) + '="' + randomString(10) + '" end;',
+                'if nil==nil then else local _' + randomString(5) + '=1 end;',
+                'repeat local _' + randomString(5) + '=' + randomInt(1, 99) + ' until true;'
+            ];
+
+            const lines = code.split('\n');
+            let result = [];
+            lines.forEach((line, idx) => {
+                result.push(line);
+                if (line.trim() && randomInt(0, 2) === 0) {
+                    result.push(junkSnippets[randomInt(0, junkSnippets.length - 1)]);
+                }
+            });
+            return result.join('\n');
+        }
+
+        function flattenControlFlow(code) {
+            // Simplified control flow flattening
+            const stateVar = '_' + randomString(5);
+            const jumpTable = '_' + randomString(5);
+
+            let result = 'local ' + stateVar + '=1;local ' + jumpTable + '={};';
+            result += 'while ' + stateVar + '~=0 do ';
+            result += code;
+            result += ' ' + stateVar + '=0; end;';
+
+            return result;
+        }
+
+        function minifyCode(code) {
+            return code
+                .replace(/\s+/g, ' ')
+                .replace(/;\s*;/g, ';')
+                .replace(/\{\s+/g, '{')
+                .replace(/\s+\}/g, '}')
+                .replace(/,\s+/g, ',')
+                .trim();
+        }
+
+        function wrapInLoader(code) {
+            const loaderVar = '_' + randomString(6);
+            const chunkVar = '_' + randomString(6);
+
+            // Encode the obfuscated code as a string
+            const encoded = [];
+            for (let i = 0; i < code.length; i++) {
+                encoded.push(code.charCodeAt(i));
+            }
+
+            return 'local ' + loaderVar + '=string.char;local ' + chunkVar + '={'
+                + encoded.join(',') + '};'
+                + 'loadstring(' + loaderVar + '(unpack(' + chunkVar + ')))()';
+        }
+
+        // ========== UI FUNCTIONS ==========
+        function updateStats() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output').value;
+
+            document.getElementById('inputSize').textContent = formatBytes(new Blob([input]).size);
+            document.getElementById('outputSize').textContent = formatBytes(new Blob([output]).size);
+            document.getElementById('lineCount').textContent = input.split('\n').length;
+
+            const inputSize = new Blob([input]).size;
+            const outputSize = new Blob([output]).size;
+            if (inputSize > 0) {
+                const change = ((outputSize - inputSize) / inputSize * 100).toFixed(1);
+                document.getElementById('sizeChange').textContent = (change > 0 ? '+' : '') + change + '%';
+            }
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('output');
+            if (!output.value) {
+                showToast('Nothing to copy!', 'error');
+                return;
+            }
+            output.select();
+            document.execCommand('copy');
+            showToast('Copied to clipboard!');
+        }
+
+        function downloadOutput() {
+            const output = document.getElementById('output').value;
+            if (!output) {
+                showToast('Nothing to download!', 'error');
+                return;
+            }
+            const blob = new Blob([output], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'obfuscated.lua';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Downloaded as obfuscated.lua');
+        }
+
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            updateStats();
+            showToast('Cleared all fields');
+        }
+
+        function loadSample() {
+            const sample = `-- Sample Lua Script
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local function createESP(player)
+    if player == Players.LocalPlayer then return end
+
+    local character = player.Character
+    if not character then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESP"
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = character
+
+    return highlight
+end
+
+local espList = {}
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        espList[player] = createESP(player)
+    end)
+end)
+
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Character then
+        espList[player] = createESP(player)
+    end
+end
+
+print("ESP System Loaded!")
+`;
+            document.getElementById('input').value = sample;
+            updateStats();
+            showToast('Sample loaded!');
+        }
+    </script>
+</body>
+</html>
